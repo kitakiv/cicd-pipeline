@@ -1,15 +1,18 @@
 pipeline {
-    agent any
-
+    agent {
+        docker {
+            image 'node:7.8.0'
+        }
+    }
     stages {
         stage('Build') {
             steps {
-                sh "react-scripts build"
+                sh "scripts/build.sh"
             }
         }
         stage('Test') {
             steps {
-                echo 'Testing..'
+                sh 'scripts/test.sh'
             }
         }
         stage('Deploy') {
