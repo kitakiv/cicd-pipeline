@@ -27,12 +27,26 @@ pipeline {
         }
 
         stage('Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
-                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+            agent {
+                kubernetes {
+                    yamlFile './kaniko.yaml'
                 }
+            }
+            steps {
+                  container('kaniko') {
+                     withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                /kaniko/executor \
+                  --context `pwd` \
+                  --dockerfile `pwd`/dockerfile \
+                  --destination ${IMAGE} \
+                  --oci-layout-path /kaniko/output \
+                  --insecure-pull \
+                  --skip-tls-verify \
+                  --destination ${IMAGE} \
+              """
+                    }
+                  }
             }
         }
 
