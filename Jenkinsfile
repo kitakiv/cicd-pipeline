@@ -4,24 +4,49 @@ pipeline {
     tools {
         nodejs 'node'
     }
+
+    environment {
+        IMAGE_NAME = 'your-dockerhub-username/my-app'
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
+
     stages {
         stage('Build') {
             steps {
                 sh 'npm install'
-                sh 'chmod +x scripts/build.sh'
-                sh "npm run build"
+                sh 'npm run build'
             }
         }
+
         stage('Test') {
             steps {
                 sh 'chmod +x scripts/test.sh'
                 sh 'scripts/test.sh'
             }
         }
-        stage('Deploy') {
+
+        stage('Docker Image') {
             steps {
-                echo 'Deploying....'
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                    sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                    sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                }
             }
+        }
+
+        stage('Deploy to Minikube') {
+            steps {
+                sh "sed -i 's|IMAGE_PLACEHOLDER|${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/deployment.yaml"
+                sh 'kubectl apply -f k8s/deployment.yaml'
+                sh 'kubectl rollout status deployment/my-app'
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
         }
     }
 }
