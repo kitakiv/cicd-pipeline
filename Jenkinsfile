@@ -6,14 +6,13 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'your-dockerhub-username/my-app'
+        IMAGE_NAME = 'kitakiv/react-app'
         IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     stages {
         stage('Build') {
             steps {
-                sh 'npm install'
                 sh 'npm run build'
             }
         }
