@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'npm run build'
+                sh 'npm install react@16.0.0 react-dom@16.0.0 react-scripts@1.0.14 --save'
             }
         }
 
